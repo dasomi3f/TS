@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adaptive tactile sensing platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .card {
+            transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, opacity 200ms ease;
+        }
+
+        .card[data-active="true"] {
+            animation: rise-in 260ms ease;
+        }
+
+        @keyframes rise-in {
+            0% {
+                transform: translateY(12px) scale(0.97);
+                opacity: 0.85;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#0f1115] text-slate-200 p-4 md:p-8 font-sans overflow-x-hidden">
+    <div id="app"></div>
+
+    <script type="module">
+        const clusters = {
+            mechanism: {
+                id: 'mechanism',
+                title: '촉각센서 메커니즘 연구',
+                currentFocus: '원리 스터디 및 개발 타당성 검토',
+                icon: 'atom',
+                color: 'bg-slate-700',
+                accent: 'border-slate-500',
+                textColor: 'text-slate-300',
+                groups: [
+                    {
+                        name: '메커니즘별 검토 및 스터디 흐름',
+                        items: [
+                            {
+                                name: '정전용량 방식',
+                                status: '우선 적용·실증 트랙',
+                                desc: '로봇손 적용 적합성이 가장 높아 현행 개발·실증의 주 트랙으로 선정했습니다. 다만 대체·보완 가능한 다른 메커니즘을 병행 검토하며 유연한 전환 옵션을 유지합니다.'
+                            },
+                            {
+                                name: '자기장 방식',
+                                status: '3축 센싱 고도화 및 UI',
+                                desc: '정전용량 구조상 어려운 XY 전단력·방향 감지를 보완하는 메커니즘입니다. 2차 프로토타입을 완성했고, 전용 UI와 3축(수직·전단) 고도화를 병행 검토 중입니다.'
+                            },
+                            {
+                                name: 'EIT 방식',
+                                status: '상용 시스템 분석 중',
+                                desc: '로봇 전신 및 대면적 적용이 용이한 인공피부 시스템 구축을 위해 상용 시스템의 하드웨어 메커니즘을 정밀 분석하고 있습니다. 이를 바탕으로 독자적인 대면적 설계와 시스템 확장성 구현 방안을 검토하고 있습니다.'
+                            },
+                            {
+                                name: '비전/압저항/하이브리드',
+                                status: '기초 원리 탐색',
+                                desc: '새로운 물리 현상을 이용한 센싱 가능성을 열어두고 기초 메커니즘을 분석하며 향후 과제 선정을 위한 데이터를 차근차근 확보하는 단계입니다.'
+                            }
+                        ]
+                    }
+                ]
+            },
+            platform: {
+                id: 'platform',
+                title: '촉각센서 플랫폼 개발',
+                currentFocus: '하드웨어 및 시스템 통합 개발',
+                icon: 'cpu',
+                color: 'bg-amber-600',
+                accent: 'border-amber-400',
+                textColor: 'text-amber-100',
+                groups: [
+                    {
+                        name: '센서부 하드웨어 개발',
+                        items: [
+                            { name: '전극 디자인 및 정밀 제작', desc: '센서 감도·해상도를 결정하는 전극 패턴을 설계하고, 스크린프린팅·레이저 탄화·PCB·FPCB 등 최적 공법으로 정밀 제작합니다.' },
+                            { name: '핵심 반응층 소재 연구', desc: '배합 및 분산 기술을 통해 소재의 점탄성과 반응 물성을 조절하며, 재료의 불완전함을 최소화하는 공정입니다.' },
+                            { name: '보호층 및 차폐층 설계', desc: '외부 마찰·오염으로부터 센서를 보호하고, 노이즈/EMI 차폐를 병행하면서 촉각 전달력을 유지하는 다층 구조를 설계합니다.' }
+                        ]
+                    },
+                    {
+                        name: '신호처리 시스템 개발',
+                        items: [
+                            { name: '신호처리 하드웨어(보드) 개발', desc: '고밀도 회로 설계 및 다채널 확장이 용이한 전용 신호처리 보드를 제작하고 전자기적 간섭(EMI)을 최소화합니다.' },
+                            { name: '임베디드 펌웨어(Firmware) 개발', desc: 'ScioSense 등 센싱 칩셋의 실시간 제어, 고속 샘플링 및 디지털 필터링 알고리즘을 로우레벨에서 구현합니다.' },
+                            { name: '인터페이스 및 데이터 엔진', desc: '센서부와 보드 간의 정밀 연결 구조를 설계하고, 지능화 단계로 데이터를 전송하기 위한 통신 프로토콜을 최적화합니다.' }
+                        ]
+                    }
+                ]
+            },
+            application: {
+                id: 'application',
+                title: '적용 (Application)',
+                currentFocus: '테솔로 DG5F 로봇손 연동 실증',
+                icon: 'hand',
+                color: 'bg-red-600',
+                accent: 'border-red-400',
+                textColor: 'text-red-100',
+                groups: [
+                    {
+                        name: '로봇손 인터페이스 통합',
+                        items: [
+                            { name: '통신/물리 인터페이스 정합', desc: '테솔로 DG5F 권장 프로토콜(RS485, TCP) 및 전원 사양을 매칭하여 시스템 통신 인프라를 구축합니다.' },
+                            { name: '데이터 패킷 및 규격 설계', desc: '헤더, 체크섬, 엔디안 등 로봇손 규격에 맞춘 메시지 구조를 설계하고 연동 API 가이드를 작성합니다.' },
+                            { name: '시스템 동기화 및 교정', desc: '컨트롤러 타임라인과 센서 데이터를 일치시키고 실제 파지 전 통합 영점(Calibration)을 조절합니다.' }
+                        ]
+                    },
+                    {
+                        name: '현장 실증 및 모션 생성',
+                        items: [
+                            { name: '로봇손 장착 및 패키징', desc: 'DG5F의 복잡한 손가락 곡면에 맞춘 기구적 체결과 움직임을 방해하지 않는 효율적인 배선을 설계합니다.' },
+                            { name: '파지 실험 모션 설계', desc: '센싱 데이터를 기반으로 다양한 물체를 안전하게 잡기 위한 최적의 손가락 궤적과 제어 시나리오를 생성합니다.' },
+                            { name: '성능 시나리오 검증', desc: '다양한 강성과 형상의 물체를 대상으로 파지 성공률과 센서의 유용성을 현장에서 최종 증명합니다.' }
+                        ]
+                    }
+                ]
+            },
+            intelligence: {
+                id: 'intelligence',
+                title: '데이터 활용 및 지능화',
+                currentFocus: '데이터 기반 파지 지능 구현',
+                icon: 'brain-circuit',
+                color: 'bg-rose-600',
+                accent: 'border-rose-400',
+                textColor: 'text-rose-100',
+                groups: [
+                    {
+                        name: '데이터 엔지니어링 및 동기화',
+                        items: [
+                            { name: 'UTM-센서 시간 동기화', status: 'Normalization', desc: '인덱스 기반 데이터를 UTM의 100Hz 절대 시계에 맞춰 고무줄처럼 정규화하여 학습 가능한 고품질 데이터를 생성합니다.' },
+                            { name: '센싱 패턴 학습 전략', status: 'Pattern', desc: '신호의 흔들림을 노이즈가 아닌 소재 고유의 반응 패턴으로 학습하여, 물리적 불완전함을 데이터로 필터링합니다.' }
+                        ]
+                    },
+                    {
+                        name: '지능형 센싱 모델링',
+                        items: [
+                            { name: '데이터 기반 성능 향상 및 고해상도화', status: 'High-Res', desc: '물리적 전극 구조의 제약을 소프트웨어적 패턴 학습으로 극복하여, 실제 셀 개수 이상의 정밀도와 고해상도 센싱 성능을 구현합니다.' },
+                            { name: '동적 변수 기반 Force 추정', status: 'dCap/dt', desc: '정전용량 값뿐만 아니라 변화율과 과거 시점 정보를 활용해 점탄성 및 히스테리시스를 보정하며 힘을 추정합니다.' }
+                        ]
+                    },
+                    {
+                        name: '파지 지능 및 제어 전략',
+                        items: [
+                            { name: '파지 상태 정의 (Slip 감지)', status: 'Definition', desc: '안정 파지(Success), 슬립 발생(Failure), 슬립 전조(Pre-slip) 상태를 데이터 패턴으로 명확히 정의합니다.' },
+                            { name: '지능형 적응 제어 피드백', status: 'Adaptive', desc: '감지된 상태에 따라 실시간으로 로봇손의 모터 토크를 보강하여 파지 성공률을 극대화하는 제어 루프를 완성합니다.' }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        let activeCluster = 'intelligence';
+
+        const app = document.getElementById('app');
+
+        const layout = `
+            <header class="max-w-6xl mx-auto mb-8 border-b border-slate-800 pb-6">
+                <div class="flex items-center gap-4">
+                    <div class="p-2 bg-white/5 rounded-xl border border-white/10 shadow-inner">
+                        <i data-lucide="activity" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight italic text-white">
+                        Adaptive <span class="text-white">tactile sensing platform</span>
+                    </h1>
+                </div>
+            </header>
+
+            <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+                <div id="cluster-grid" class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-min"></div>
+                <div class="lg:col-span-4 space-y-6">
+                    <div id="detail-card" class="bg-slate-900 rounded-2xl p-6 border border-slate-800 sticky top-8 shadow-2xl"></div>
+                </div>
+            </main>
+        `;
+
+        app.innerHTML = layout;
+
+        const clusterGrid = document.getElementById('cluster-grid');
+        const detailCard = document.getElementById('detail-card');
+
+        function renderClusters() {
+            clusterGrid.innerHTML = '';
+            Object.values(clusters).forEach((cluster) => {
+                const card = document.createElement('div');
+                card.className = `card relative overflow-hidden cursor-pointer transition-all duration-300 rounded-xl border-2 p-5 h-full ${
+                    activeCluster === cluster.id
+                        ? `${cluster.accent} bg-slate-900 shadow-lg shadow-black/40 ring-1 ring-white/10 scale-[1.01]`
+                        : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 opacity-90 hover:opacity-100'
+                }`;
+                card.dataset.active = activeCluster === cluster.id;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg ${cluster.color} shadow-inner">
+                                <i data-lucide="${cluster.icon}" class="w-5 h-5"></i>
+                            </div>
+                            <div class="flex flex-col">
+                                <h3 class="font-bold leading-tight ${activeCluster === cluster.id ? 'text-white' : 'text-slate-400'}">
+                                    ${cluster.title}
+                                </h3>
+                                ${cluster.currentFocus ? `
+                                    <span class="text-[10px] text-amber-400 font-medium flex items-center gap-1 mt-0.5 animate-pulse">
+                                        <i data-lucide="target" class="w-2.5 h-2.5"></i>
+                                        ${cluster.currentFocus}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${activeCluster === cluster.id ? '<i data-lucide="zap" class="w-4 h-4 text-amber-400 animate-pulse"></i>' : ''}
+                    </div>
+
+                    <div class="space-y-4">
+                        ${cluster.groups.map((group) => `
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                                    ${group.name}
+                                </div>
+                                <ul class="grid grid-cols-1 gap-1.5 pl-4">
+                                    ${group.items.map((item) => `
+                                        <li class="flex items-start justify-between gap-2 group/item">
+                                            <span class="text-[11px] text-slate-300 group-hover/item:text-amber-400 transition-colors leading-tight">• ${item.name}</span>
+                                            ${item.status ? `<span class="text-[8px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-400 border border-slate-700 whitespace-nowrap">${item.status}</span>` : ''}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    activeCluster = cluster.id;
+                    render();
+                });
+
+                clusterGrid.appendChild(card);
+            });
+        }
+
+        function renderDetail() {
+            const cluster = clusters[activeCluster];
+            detailCard.innerHTML = `
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-2 text-white">
+                        <i data-lucide="maximize-2" class="w-5 h-5 text-amber-400"></i>
+                        <h2 class="text-lg font-bold">Task detail</h2>
+                    </div>
+                    <span class="text-[10px] px-2 py-1 rounded-full uppercase font-bold ${cluster.color} ${cluster.textColor}">
+                        Deep Dive
+                    </span>
+                </div>
+
+                <div class="space-y-8 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                    ${cluster.groups.map((group, idx) => `
+                        <div class="animate-in fade-in slide-in-from-bottom-2 duration-300" style="animation-delay: ${idx * 100}ms">
+                            <h4 class="text-sm font-bold text-amber-400 mb-4 flex items-center gap-2 border-b border-amber-400/20 pb-2 uppercase tracking-widest">
+                                <i data-lucide="workflow" class="w-4 h-4"></i>
+                                ${group.name}
+                            </h4>
+                            <div class="space-y-6">
+                                ${group.items.map((item) => `
+                                    <div class="group relative pl-4 border-l-2 border-slate-800 hover:border-amber-500 transition-colors">
+                                        <div class="flex flex-col mb-1.5">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-sm font-bold text-slate-100 group-hover:text-amber-400 transition-colors">${item.name}</span>
+                                                ${item.status ? `<span class="text-[9px] px-2 py-0.5 bg-amber-400/10 text-amber-400 rounded-full border border-amber-400/20 font-medium">${item.status}</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-slate-400 leading-relaxed">${item.desc}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-800">
+                    <h5 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="gauge" class="w-3 h-3"></i>
+                        Insight
+                    </h5>
+                    <div class="p-3 bg-white/5 rounded-xl text-xs text-slate-400 italic leading-relaxed">
+                        ${cluster.id === 'platform'
+                            ? '단순한 부착을 넘어, <strong>하드웨어 보드와 임베디드 펌웨어</strong>가 센서부의 전극 디자인과 일체화되어야 최상의 신호 신뢰도를 확보할 수 있습니다.'
+                            : cluster.id === 'intelligence'
+                                ? '"노이즈를 지우는 것이 아니라 <strong>센싱 패턴</strong>으로 학습한다"는 관점의 전환이 핵심입니다. 이를 통해 저사양 HW에서도 고해상도 성능을 뽑아냅니다.'
+                                : '원천 기술과 현장 실증 데이터의 결합은 로봇이 물체를 인지하고 제어하는 실질적인 "능력"으로 변환됩니다.'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function render() {
+            renderClusters();
+            renderDetail();
+            lucide.createIcons();
+        }
+
+        render();
+    </script>
+</body>
+</html>
