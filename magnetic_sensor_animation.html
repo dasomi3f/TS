@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자기 촉각 센서 작동 원리</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f9f8f5;
+    color: #1a1a1a;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+  #root { max-width: 720px; margin: 0 auto; }
+  h2 {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 500;
+    color: #444;
+    margin-bottom: 8px;
+  }
+  svg { display: block; width: 100%; }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+    margin: 8px 0 4px;
+    flex-wrap: wrap;
+  }
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ldash {
+    width: 20px;
+    height: 0;
+    border-top: 2px dashed #3B7CD4;
+  }
+  .lsolid {
+    width: 20px;
+    height: 3px;
+    background: #E85D24;
+    border-radius: 2px;
+  }
+
+  .btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 14px 0 6px;
+  }
+  button.mode-btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid #bbb;
+    background: #f0efeb;
+    color: #333;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  button.mode-btn:hover {
+    background: #e4e3df;
+    border-color: #999;
+  }
+  button.mode-btn.active {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #3b82f6;
+    font-weight: 500;
+  }
+
+  .readout {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin: 12px 0 6px;
+  }
+  .val-box { text-align: center; min-width: 60px; }
+  .val-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+  .val-num {
+    font-size: 20px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+  }
+  .val-x { color: #E2603A; }
+  .val-y { color: #2E8B6E; }
+  .val-z { color: #3B7CD4; }
+
+  .field-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    margin: 6px 0 8px;
+    font-size: 12px;
+    color: #666;
+  }
+  .field-bar {
+    width: 130px;
+    height: 7px;
+    border-radius: 4px;
+    background: #ddd;
+    overflow: hidden;
+  }
+  .field-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: #E85D24;
+    transition: width 0.05s;
+  }
+
+  .desc {
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    min-height: 18px;
+    padding: 0 8px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <h2>자기 촉각 센서 작동 원리 애니메이션</h2>
+
+  <svg id="sv" viewBox="0 0 680 400">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <marker id="arr-vec" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M1 1L9 5L1 9" fill="#E85D24" stroke="none"/>
+      </marker>
+      <marker id="arr-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#3B7CD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <radialGradient id="magGrad" cx="40%" cy="35%" r="60%">
+        <stop offset="0%" stop-color="#a0c4f8"/>
+        <stop offset="100%" stop-color="#3878c8"/>
+      </radialGradient>
+    </defs>
+
+    <!-- PCB -->
+    <rect x="160" y="308" width="360" height="28" rx="4" fill="#8B6914" opacity="0.9"/>
+    <rect x="160" y="308" width="360" height="5" rx="2" fill="#C8A020" opacity="0.7"/>
+    <text x="340" y="327" text-anchor="middle" fill="#F5DFA0" font-size="11" font-family="sans-serif">홀 센서 기판 (PCB)</text>
+
+    <!-- 엘라스토머 -->
+    <path id="elastomer" fill="#B8E4D8" stroke="#5DCAA5" stroke-width="1.2" opacity="0.82"/>
+    <text id="el-label" x="340" y="134" text-anchor="middle" fill="#0F6E56" font-size="11" font-family="sans-serif">Ecoflex 00-30 엘라스토머</text>
+
+    <!-- 홀 센서 칩 -->
+    <rect id="hall-chip" x="310" y="284" width="60" height="18" rx="3" fill="#2a2a3a"/>
+    <rect x="316" y="288" width="48" height="10" rx="2" fill="#4a4a6a"/>
+    <text x="340" y="297" text-anchor="middle" fill="#a0b8f0" font-size="9" font-family="sans-serif">HALL</text>
+
+    <!-- 자석 -->
+    <g id="magnet-group">
+      <rect x="308" y="192" width="64" height="44" rx="5" fill="url(#magGrad)" stroke="#2456a0" stroke-width="1"/>
+      <rect x="308" y="192" width="64" height="22" rx="5" fill="#3060c0" opacity="0.25"/>
+      <text x="340" y="208" text-anchor="middle" fill="#e8f4ff" font-size="12" font-weight="bold" font-family="sans-serif">N</text>
+      <text x="340" y="228" text-anchor="middle" fill="#0a1830" font-size="12" font-weight="bold" font-family="sans-serif">S</text>
+    </g>
+
+    <!-- 자기력선 (자석과 함께 이동) -->
+    <g id="flines">
+      <path id="fl1" fill="none" stroke="#3B7CD4" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr-blue)"/>
+      <path id="fl2" fill="none" stroke="#3B7CD4" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr-blue)"/>
+      <path id="fl3" fill="none" stroke="#3B7CD4" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.75" marker-end="url(#arr-blue)"/>
+      <path id="fl4" fill="none" stroke="#3B7CD4" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.75" marker-end="url(#arr-blue)"/>
+      <path id="fl5" fill="none" stroke="#3B7CD4" stroke-width="0.9" stroke-dasharray="3 4" opacity="0.5"/>
+      <path id="fl6" fill="none" stroke="#3B7CD4" stroke-width="0.9" stroke-dasharray="3 4" opacity="0.5"/>
+    </g>
+
+    <!-- 홀 센서 B 벡터 -->
+    <g id="hall-vec-group">
+      <circle id="hall-sense-ring" cx="340" cy="293" r="10" fill="none" stroke="#E85D24" stroke-width="1.5" opacity="0"/>
+      <line id="hall-vec-line" x1="340" y1="293" x2="340" y2="293"
+        stroke="#E85D24" stroke-width="2.5" marker-end="url(#arr-vec)" stroke-linecap="round"/>
+      <text id="hall-vec-label" x="374" y="288" fill="#E85D24" font-size="11" font-family="sans-serif" opacity="0">B&#8407; (감지)</text>
+    </g>
+    <line id="vec-leader" x1="354" y1="284" x2="372" y2="272" stroke="#E85D24" stroke-width="0.5" stroke-dasharray="3 2" opacity="0"/>
+
+    <!-- 힘 화살표 -->
+    <g id="force-arrow" opacity="0">
+      <line x1="340" y1="64" x2="340" y2="100" stroke="#E2603A" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text x="340" y="56" text-anchor="middle" fill="#E2603A" font-size="12" font-family="sans-serif">F (Z)</text>
+    </g>
+    <g id="shear-x-arrow" opacity="0">
+      <line id="sx-line" x1="200" y1="208" x2="248" y2="208" stroke="#E2603A" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text id="sx-label" x="185" y="212" text-anchor="end" fill="#E2603A" font-size="12" font-family="sans-serif">F (X)</text>
+    </g>
+    <g id="shear-y-arrow" opacity="0">
+      <line x1="340" y1="64" x2="340" y2="100" stroke="#2E8B6E" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text x="340" y="56" text-anchor="middle" fill="#2E8B6E" font-size="12" font-family="sans-serif">F (Y)</text>
+    </g>
+
+    <!-- 레이블 -->
+    <line x1="480" y1="210" x2="516" y2="192" stroke="#888" stroke-width="0.5" stroke-dasharray="3 2"/>
+    <text x="520" y="188" fill="#777" font-size="11" font-family="sans-serif">상용 자석</text>
+    <line x1="480" y1="155" x2="516" y2="143" stroke="#888" stroke-width="0.5" stroke-dasharray="3 2"/>
+    <text x="520" y="139" fill="#777" font-size="11" font-family="sans-serif">엘라스토머</text>
+    <line x1="310" y1="291" x2="268" y2="278" stroke="#888" stroke-width="0.5" stroke-dasharray="3 2"/>
+    <text x="145" y="274" text-anchor="middle" fill="#777" font-size="11" font-family="sans-serif">홀 센서</text>
+    <text x="145" y="287" text-anchor="middle" fill="#999" font-size="10" font-family="sans-serif">(매립)</text>
+
+    <!-- ESP32 -->
+    <rect x="30" y="328" width="80" height="36" rx="4" fill="#2a3a2a" opacity="0.9"/>
+    <text x="70" y="344" text-anchor="middle" fill="#70c070" font-size="9" font-family="sans-serif">ESP32</text>
+    <text x="70" y="357" text-anchor="middle" fill="#50a050" font-size="8" font-family="sans-serif">신호처리</text>
+    <line x1="110" y1="320" x2="160" y2="315" stroke="#70c070" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>
+
+    <!-- 축 -->
+    <line x1="606" y1="312" x2="606" y2="342" stroke="#3B7CD4" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="606" y="358" text-anchor="middle" fill="#666" font-size="10" font-family="sans-serif">Z</text>
+    <line x1="606" y1="312" x2="632" y2="312" stroke="#E2603A" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="641" y="316" fill="#E2603A" font-size="10" font-family="sans-serif">X</text>
+    <line x1="606" y1="312" x2="588" y2="285" stroke="#2E8B6E" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.7"/>
+    <text x="592" y="278" fill="#2E8B6E" font-size="10" font-family="sans-serif">Y</text>
+  </svg>
+
+  <div class="legend">
+    <span><div class="ldash"></div> 자기력선 (자석 고유, 자석과 함께 이동)</span>
+    <span><div class="lsolid"></div> B&#8407; 벡터 @ 홀 센서 (감지값)</span>
+  </div>
+
+  <div class="btns">
+    <button class="mode-btn active" onclick="setMode('idle')" id="btn-idle">대기</button>
+    <button class="mode-btn" onclick="setMode('z')" id="btn-z">Z축 누름</button>
+    <button class="mode-btn" onclick="setMode('x')" id="btn-x">X축 전단</button>
+    <button class="mode-btn" onclick="setMode('y')" id="btn-y">Y축 전단</button>
+    <button class="mode-btn" onclick="setMode('multi')" id="btn-multi">복합</button>
+  </div>
+
+  <div class="readout">
+    <div class="val-box">
+      <div class="val-label">Bx (홀)</div>
+      <div class="val-num val-x" id="vx">0.0</div>
+    </div>
+    <div class="val-box">
+      <div class="val-label">By (홀)</div>
+      <div class="val-num val-y" id="vy">0.0</div>
+    </div>
+    <div class="val-box">
+      <div class="val-label">Bz (홀)</div>
+      <div class="val-num val-z" id="vz">0.0</div>
+    </div>
+  </div>
+  <div class="field-bar-wrap">
+    <span>|B| @ 홀 센서</span>
+    <div class="field-bar"><div class="field-bar-fill" id="fbar" style="width:8%"></div></div>
+    <span id="fbar-val">8%</span>
+  </div>
+  <div class="desc" id="desc">자석 정위치. 홀 센서의 B&#8407;는 작은 -Z 성분만 감지.</div>
+</div>
+
+<script>
+const EL_BOT = 308, EL_H0 = 198;
+
+function elPath(c, s) {
+  const r = 14;
+  const newH  = EL_H0 - c * 36;
+  const newW  = (EL_H0 / newH) * 280;
+  const top   = EL_BOT - newH;
+  const halfW = newW / 2;
+  const lx = 340 - halfW, rx = 340 + halfW;
+  const ts = s * 28, bulge = c * 18, mid = (top + EL_BOT) / 2;
+  const tl = lx + ts, tr = rx + ts;
+  return [
+    `M ${tl+r},${top}`, `L ${tr-r},${top}`,
+    `Q ${tr},${top} ${tr},${top+r}`,
+    `Q ${rx+bulge},${mid} ${rx},${EL_BOT}`,
+    `L ${lx},${EL_BOT}`,
+    `Q ${lx-bulge},${mid} ${tl},${top+r}`,
+    `Q ${tl},${top} ${tl+r},${top} Z`
+  ].join(' ');
+}
+
+function dipoleField(mx, mz) {
+  const hx = 340, hz = 293;
+  const dx = hx - mx, dz = hz - mz;
+  const r = Math.sqrt(dx*dx + dz*dz);
+  if (r < 1) return { bx: 0, bz: 1, mag: 1 };
+  const rx = dx/r, rz = dz/r;
+  const mx_m = 0, mz_m = -1;
+  const mdotr = mx_m*rx + mz_m*rz;
+  const bx = (3*mdotr*rx - mx_m) / (r*r*r);
+  const bz = (3*mdotr*rz - mz_m) / (r*r*r);
+  const mag = Math.sqrt(bx*bx + bz*bz);
+  return { bx, bz, mag };
+}
+
+const MAG_CX0 = 340, MAG_CZ0 = 214;
+
+const modes = {
+  idle:  { c:0,    s:0,   dx:0,  dz:0,  fy:false, fz:false, fx:false, desc:'자석 정위치. 홀 센서의 B\u20d7는 작은 -Z 성분만 감지.' },
+  z:     { c:0.78, s:0,   dx:0,  dz:32, fy:false, fz:true,  fx:false, desc:'자석 하강 → 홀 센서에 가까워짐 → |B|↑, Bz 급증.' },
+  x:     { c:0,    s:0.9, dx:25, dz:0,  fy:false, fz:false, fx:true,  desc:'X 전단 → 자석 측방 이동 → B\u20d7 방향 기울어짐, Bx 증가.' },
+  y:     { c:0,    s:0,   dx:0,  dz:-8, fy:true,  fz:false, fx:false, desc:'Y 전단 → 자석 약간 상승 → B\u20d7 방향 변화, Bz 감소.' },
+  multi: { c:0.5,  s:0.5, dx:14, dz:18, fy:false, fz:true,  fx:true,  desc:'복합 자극 → Bx, Bz 동시 변화 → ESP32가 3D 벡터 연산.' }
+};
+
+let mode = 'idle', t = 0, tgt = modes.idle;
+let cur = { c:0, s:0, dx:0, dz:0 };
+
+function lerp(a, b, f) { return a + (b-a)*f; }
+
+function setMode(m) {
+  mode = m; tgt = modes[m];
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+  document.getElementById('desc').textContent = tgt.desc;
+  document.getElementById('force-arrow').style.opacity    = tgt.fz ? '1' : '0';
+  document.getElementById('shear-x-arrow').style.opacity  = tgt.fx ? '1' : '0';
+  document.getElementById('shear-y-arrow').style.opacity  = tgt.fy ? '1' : '0';
+  if (tgt.fx) {
+    const d = tgt.dx > 0 ? 1 : -1;
+    document.getElementById('sx-line').setAttribute('x1', d>0?200:480);
+    document.getElementById('sx-line').setAttribute('x2', d>0?248:432);
+    document.getElementById('sx-label').setAttribute('x', d>0?185:496);
+    document.getElementById('sx-label').setAttribute('text-anchor', d>0?'end':'start');
+  }
+}
+
+function animate() {
+  t++;
+  const f   = 0.07;
+  const pls = Math.sin(t*0.08)*0.5 + 0.5;
+  const wgl = Math.sin(t*0.05);
+
+  cur.c  = lerp(cur.c,  tgt.c,  f);
+  cur.s  = lerp(cur.s,  tgt.s,  f);
+  cur.dx = lerp(cur.dx, tgt.dx, f);
+  cur.dz = lerp(cur.dz, tgt.dz, f);
+
+  // 엘라스토머
+  document.getElementById('elastomer').setAttribute('d', elPath(cur.c, cur.s));
+  const newH = EL_H0 - cur.c * 36;
+  document.getElementById('el-label').setAttribute('y', EL_BOT - newH + 22);
+
+  // 자석
+  document.getElementById('magnet-group').setAttribute('transform',
+    `translate(${cur.dx}, ${cur.dz})`);
+
+  const mcx = MAG_CX0 + cur.dx;
+  const mcz = MAG_CZ0 + cur.dz;
+  const nx = mcx, nz = mcz - 22;
+  const sx = mcx, sz = mcz + 22;
+  const flOff = (t*0.9) % 16;
+
+  // 자기력선 (N→S 루프, 자석과 함께 이동)
+  document.getElementById('fl1').setAttribute('d',
+    `M${nx},${nz} C${nx+90},${nz-50} ${sx+90},${sz+50} ${sx},${sz}`);
+  document.getElementById('fl2').setAttribute('d',
+    `M${nx},${nz} C${nx-90},${nz-50} ${sx-90},${sz+50} ${sx},${sz}`);
+  document.getElementById('fl3').setAttribute('d',
+    `M${nx},${nz} C${nx+50},${nz-30} ${sx+50},${sz+30} ${sx},${sz}`);
+  document.getElementById('fl4').setAttribute('d',
+    `M${nx},${nz} C${nx-50},${nz-30} ${sx-50},${sz+30} ${sx},${sz}`);
+  document.getElementById('fl5').setAttribute('d',
+    `M${nx},${nz} C${nx+20},${nz+10} ${sx+20},${sz-10} ${sx},${sz}`);
+  document.getElementById('fl6').setAttribute('d',
+    `M${nx},${nz} C${nx-20},${nz+10} ${sx-20},${sz-10} ${sx},${sz}`);
+  ['fl1','fl2','fl3','fl4','fl5','fl6'].forEach(id =>
+    document.getElementById(id).setAttribute('stroke-dashoffset', -flOff));
+
+  // B벡터 계산
+  const { bx, bz, mag } = dipoleField(mcx, mcz);
+  const refMag0 = dipoleField(MAG_CX0, MAG_CZ0).mag;
+  const scale = Math.min(mag/refMag0, 6) * 32;
+  const bxN = bx/mag, bzN = bz/mag;
+  const vx2 = 340 + bxN*scale;
+  const vz2 = 293 + bzN*scale;
+  document.getElementById('hall-vec-line').setAttribute('x2', vx2);
+  document.getElementById('hall-vec-line').setAttribute('y2', vz2);
+
+  // 감지 링
+  const fi = Math.min(mag/refMag0, 1);
+  const ring = document.getElementById('hall-sense-ring');
+  ring.style.opacity = 0.4 + pls*0.5*fi;
+  ring.setAttribute('r', 8 + fi*6);
+  ring.setAttribute('stroke-width', 1 + fi*1.5);
+
+  // 벡터 레이블
+  const vecVis = mag > refMag0*0.5 ? 1 : Math.max(0, (mag/refMag0-0.1)/0.4);
+  document.getElementById('hall-vec-label').style.opacity = vecVis;
+  document.getElementById('vec-leader').style.opacity = vecVis*0.6;
+
+  // 홀 센서 glow
+  document.getElementById('hall-chip').style.filter =
+    fi > 0.15 ? `drop-shadow(0 0 ${(fi*0.6+pls*fi*0.4)*8}px #E85D24)` : 'none';
+
+  // 수치 출력
+  const norm = refMag0;
+  document.getElementById('vx').textContent = (bx/norm*10).toFixed(1);
+  document.getElementById('vy').textContent = (cur.s*2.8 + wgl*(mode!=='idle'?0.08:0)).toFixed(1);
+  document.getElementById('vz').textContent = (bz/norm*10).toFixed(1);
+  const fp = Math.round(Math.min(mag/refMag0*100, 100));
+  document.getElementById('fbar').style.width = fp+'%';
+  document.getElementById('fbar-val').textContent = fp+'%';
+
+  // 화살표 펄스
+  if (tgt.fz) document.getElementById('force-arrow').style.opacity   = 0.6+pls*0.4;
+  if (tgt.fx) document.getElementById('shear-x-arrow').style.opacity = 0.6+pls*0.4;
+  if (tgt.fy) document.getElementById('shear-y-arrow').style.opacity = 0.6+pls*0.4;
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
